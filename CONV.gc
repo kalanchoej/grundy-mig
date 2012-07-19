@@ -1,0 +1,75 @@
+#!/bin/bash
+
+BIBFILE=data/EXTRACT.mrc
+
+# Set the prefix for files to gc (Grundy County)
+PREFIX=gc
+
+export PATH=/mnt/evergreen/Evergreen/Open-ILS/src/extras/import:/mnt/evergreen/migration/migration-tools:$PATH:.
+export PERL5LIB=/mnt/evergreen/migration/migration-tools/Equinox-Migration/lib
+
+function conv_bibs {
+	local	bibfile=$1
+	local	startid=$2
+
+	# we know that the source character encoding is MARC-8
+  	echo '<?xml version="1.0" encoding="UTF-8" ?>' > inter/$PREFIX.marc.xml
+  	yaz-marcdump -f MARC-8 -t UTF-8 -o marcxml $bibfile >> inter/$PREFIX.marc.xml
+  	
+  	echo "checking validity of MARC XML"
+  	echo "validity = well-formed XML + valid UTF-8"
+ 	xmllint --noout inter/$PREFIX.marc.xml 2> log/$PREFIX.marc.xml.err
+ 
+ 	marc_cleanup --prefix=$PREFIX --marcfile=inter/$PREFIX.marc.xml --fullauto --renumber-from $startid -ot 001
+ 
+ 	mv $PREFIX.clean.marc.xml inter
+ 	mv old2new.map rpt
+	
+	# Export and fingerprint the current database 
+	marc_export -a > rpt/incum.mrc
+	fingerprinter --tag=901 --subfield=c -o rpt/incum.fp -excep ex --marctype=USMARC rpt/incum.mrc
+
+	# Now fingerprint the new records we're going to put in
+	fingerprinter -o rpt/$PREFIX.fp -x err/$PREFIX.fp.ex inter/$PREFIX.clean.marc.xml
+
+	# Make a single fingerprint file, dedupe and merge
+	cat rpt/incum.fp rpt/$PREFIX.fp | sort -r > rpt/dedupe.fp
+	match_fingerprints -t $startid -o rpt/$PREFIX.merge rpt/dedupe.fp
+
+	extract_loadset -l 1 -i inter/$PREFIX.clean.marc.xml -o out/$PREFIX.merged.xml rpt/$PREFIX.merge
+
+	# Strip out the tags where the item info lives - that comes later
+	perl -npe 's!<datafield tag="852".+?</datafield>!!g;' < out/$PREFIX.merged.xml > out/$PREFIX.final.xml
+
+	# Find the list of used tcn_values to speed up the process later - we only want to run this query once
+	psql -U evergreen -h localhost -d evergreen -c "select tcn_value from biblio.record_entry where not deleted" | perl -npe 's/^\s+//;' > rpt/used_tcns
+
+	# Convert the XML file to BRE
+	marc2bre.pl --startid=$startid --marctype=XML -f out/$PREFIX.final.xml --used_tcn_file=rpt/used_tcns > out/$PREFIX.bre
+
+	# At some point this was broken in rel_2_2_0 and master. Reported and fix posted here:
+	# https://bugs.launchpad.net/evergreen/+bug/1022692
+	# There's also a git branch on /mnt/evergreeen/Evergreen with the fix included
+	parallel_pg_loader.pl \
+	-or bre \
+	out/$PREFIX.bre --output=out/$PREFIX
+
+	# Need to have .pgpass set up so that this runs without password prompt
+	# This is going to load all the records with the output of the above
+	psql -U evergreen -h localhost -d evergreen -f out/gc.sql
+
+
+
+
+}
+
+function conv_items {
+	~/migration/barcode_transform/barcode_transform.rb inter/$PREFIX.clean.marc.xml 852 p 33577
+	# we need the marc file that still includes the item fields 
+	extract_holdings --marcfile=inter/$PREFIX.clean.marc.xml.transformed --prefix=$PREFIX --holdings 852 --copyid 852p \
+		--map cfg/$PREFIX.holdings.map
+}
+
+conv_bibs $BIBFILE 150000
+
+conv_items

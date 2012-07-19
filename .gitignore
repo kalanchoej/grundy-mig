@@ -1,0 +1,9 @@
+data/*
+out/* 
+rpt/*.mrc
+inter
+log
+err
+*.swp
+out/
+Archive.zip

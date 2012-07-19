@@ -1,0 +1,46 @@
+0 - 99	Books	Adult Non-Fiction
+100 - 199	Books	Adult Non-Fiction
+200 - 299	Books	Adult Non-Fiction
+300 - 399	Books	Adult Non-Fiction
+400 - 499	Books	Adult Non-Fiction
+500 - 599	Books	Adult Non-Fiction
+600 - 699	Books	Adult Non-Fiction
+700 - 799	Books	Adult Non-Fiction
+800 - 899	Books	Adult Non-Fiction
+900 - 999	Books	Adult Non-Fiction
+Audio Books (CD)	AudioBooks	Audio Books (CD)
+Audio Movies	DVD	DVD
+Biography	Biography	Biography
+Biography (Young Adults)	Biography	Biography
+Board Books	Books	Board books
+Book & CD	Books	Book & CD
+Downstairs parenting	Books	Downstairs Parenting
+Ellison Cutter	Equipment	Accucut
+Equipment	Equipment	Equipment
+Fiction (Adult)	Books	Fiction (Adult)
+Fiction (Easy)	Books	Fiction (Children/Easy)
+Fiction (Children/Easy)	Books	Fiction (Children/Easy)
+Fiction (Juvenile)	Books	Fiction (Juvenile)
+Fiction (Young Adult)	Books	Fiction (Young Adult)
+Genealogy	Noncirculating	Genealogy
+Inhouse Equip. & REF	Equipment	Equipment
+Internet Access	Noncirculating	Internet Access
+Large Print Books (Adult)	Books	Large Print Books (Adult)
+Magazine (Adults / Young Adults)	Magazines	Magazine Adult
+Magazines (Children)	Magazines	Magazine Downstairs
+Microfilm	MicroFilm	MicroFilm
+Missouri	Books	Missouri
+Missouri (Juvenile)	Books	Missouri (Juvenile)
+Music (CD)	CD	Music (CD)
+Music (Downstairs)	CD	Music (Downstairs)
+Non-Fiction (Easy)	Books	Non-Fiction (Children/Easy)
+Non-Fiction (Children/Easy)	Books	Non-Fiction (Children/Easy)
+Non-Fiction (Juvenile)	Books	Non-Fiction (Juvenile)
+Non-Fiction (Young Adult)	Books	Non-Fiction (Young Adult)
+Oversize Books NF	Books	Oversize Books NF
+Reference Adults Non-fiction	Books	Ref (Adult)
+Reference Children / Easy Non-fiction	Books	Ref (Child)
+Reference Young Adult Non-fiction	Books	Ref (Young Adult)
+Referenece Juvenile Non-fiction	Books	Ref (Juvenile)
+Video (DVD)	DVD	DVD
+Young Adult Audio (CD)	CD	Young Adult Audio (CD)
