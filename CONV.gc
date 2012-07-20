@@ -14,29 +14,29 @@ function conv_bibs {
 	local startid=$2
 
 	# we know that the source character encoding is MARC-8
-	echo '<?xml version="1.0" encoding="UTF-8" ?>'  > inter/$PREFIX.marc.xml
-	yaz-marcdump -f MARC-8 -t UTF-8 -o marcxml $bibfile >> inter/$PREFIX.marc.xml
+	# echo '<?xml version="1.0" encoding="UTF-8" ?>'  > inter/$PREFIX.marc.xml
+	# yaz-marcdump -f MARC-8 -t UTF-8 -o marcxml $bibfile >> inter/$PREFIX.marc.xml
 
-	echo "checking validity of MARC XML"
-	echo "validity = well-formed XML + valid UTF-8"
-	xmllint --noout inter/$PREFIX.marc.xml 2> log/$PREFIX.marc.xml.err
+	# echo "checking validity of MARC XML"
+	# echo "validity = well-formed XML + valid UTF-8"
+	# xmllint --noout inter/$PREFIX.marc.xml 2> log/$PREFIX.marc.xml.err
 
-	marc_cleanup --prefix=$PREFIX --marcfile=inter/$PREFIX.marc.xml --fullauto --renumber-from $startid -ot 001
+	# marc_cleanup --prefix=$PREFIX --marcfile=inter/$PREFIX.marc.xml --fullauto --renumber-from $startid -ot 001
 
-	mv $PREFIX.clean.marc.xml inter
-	mv old2new.map rpt
+	# mv $PREFIX.clean.marc.xml inter
+	# mv old2new.map rpt
 
-	fingerprinter -o rpt/$PREFIX.fp -x err/$PREFIX.fp.ex inter/$PREFIX.clean.marc.xml
+	# fingerprinter -o rpt/$PREFIX.fp -x err/$PREFIX.fp.ex inter/$PREFIX.clean.marc.xml
 
         #make sure -T switch for sort is used.  /tmp partition is NOT big enough to support the temporary output
- 	cat rpt/incum.fp rpt/$PREFIX.fp | sort -T /mnt/evergreen/migration/dedupe -r > rpt/dedupe.fp
+ 	cat rpt/incum.fp rpt/$PREFIX.fp | sort -T inter -r > rpt/dedupe.fp
 	match_fingerprints -t $startid -o rpt/$PREFIX.merge rpt/dedupe.fp
 
 	extract_loadset -l 1 -i inter/$PREFIX.clean.marc.xml -o out/$PREFIX.merged.xml rpt/$PREFIX.merge
 
 	perl -npe 's!<datafield tag="(852|029|049|590|9[489]9)".+?</datafield>!!g;' < inter/$PREFIX.clean.marc.xml > out/$PREFIX.final.xml
 
-	psql -U evergreen -c "select tcn_value from biblio.record_entry where not deleted" | perl -npe 's/^\s+//;' | sed '1,2d' > rpt/used_tcns
+	psql -U evergreen -h localhost -d evergreen -c "select tcn_value from biblio.record_entry where not deleted" | perl -npe 's/^\s+//;' | sed '1,2d' > rpt/used_tcns
 	marc2bre.pl --idfield 903 --idsubfield a --startid=$startid --marctype=XML -f out/$PREFIX.final.xml --used_tcn_file=rpt/used_tcns > out/$PREFIX.bre
 }
 
