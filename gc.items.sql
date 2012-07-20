@@ -77,7 +77,7 @@ INSERT INTO m_gc.asset_copy_location (name, owning_lib)
 
 UPDATE m_gc.asset_copy_legacy a
   SET location = b.id
-  FROM asset.copy_location b
+  FROM m_gc.asset_copy_location b
   WHERE a.l_shelf = b.name
   and a.circ_lib = b.owning_lib;
 
@@ -158,9 +158,8 @@ UPDATE m_gc.asset_copy_legacy AS i SET call_number = COALESCE(
 \echo about to start copying staging values into production tables
 BEGIN;
 
--- asset.copy_locations have already been populated by Janine
---\echo inserting copy locations
--- INSERT INTO asset.copy_location SELECT * FROM m_gc.asset_copy_location;
+\echo inserting copy locations
+INSERT INTO asset.copy_location SELECT * FROM m_gc.asset_copy_location;
 \echo inserting copies
 INSERT INTO asset.copy SELECT * FROM m_gc.asset_copy;
 \echo inserting call numbers
