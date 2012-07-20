@@ -1,0 +1,16 @@
+#!/bin/bash
+
+export PATH=/mnt/evergreen/Evergreen/Open-ILS/src/extras/import:/mnt/evergreen/migration/migration-tools:/openils/bin/:$PATH:.
+export PERL5LIB=/openils/lib/perl5:/mnt/evergreen/migration/migration-tools/Equinox-Migration/lib
+
+function dedupe {
+	echo "Performing fast extract of incumbent bibs to rpt/incum.bib"
+	fast-extract > rpt/incum.bib
+	# Run next two steps on migration to limit impact on production...
+	echo "Adding id's to marc records and exporting to rpt/incum.xml"
+	marc_add_ids --field=deleted --field=id --field=tcn_source --field=tcn_value --field=marc < rpt/incum.bib > rpt/incum.xml
+	echo "Fingerprinting incumbent records - exporting to rpt/incum.fp"
+	fingerprinter -o rpt/incum.fp -x err/incum.fp.ex --marctype=XML rpt/incum.xml --tag=901 --subfield=c
+}
+
+dedupe

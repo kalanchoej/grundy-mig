@@ -54,10 +54,11 @@ CREATE unique index m_gc_indx1 on m_gc.loc_map (l_location);
 ALTER TABLE m_gc.asset_copy_legacy ADD COLUMN l_circ_mod TEXT, ADD COLUMN l_shelf TEXT;
 
 -- Merge some copy locations per Grundy's worksheet
-update m_gc.asset_copy_legacy set l_location = replace(l_location, 'FICTION (EASY) RED DOT BOOKS', 'FICTION (CHILDREN/EASY)');
-update m_gc.asset_copy_legacy set l_location = replace(l_location, 'FICTION (EASY) BLUE DOT BOOKS', 'FICTION (CHILDREN/EASY)');
-update m_gc.asset_copy_legacy set l_location = replace(l_location, 'FICTION (EASY) GREEN DOT BOOKS', 'FICTION (CHILDREN/EASY)');
-update m_gc.asset_copy_legacy set l_location = replace(l_location, 'BIOGRAPHY (YOUNG ADULTS)', 'BIOGRAPHY');
+-- Commenting this section because Grundy wants to keep these locatoins
+-- update m_gc.asset_copy_legacy set l_location = replace(l_location, 'FICTION (EASY) RED DOT BOOKS', 'FICTION (CHILDREN/EASY)');
+-- update m_gc.asset_copy_legacy set l_location = replace(l_location, 'FICTION (EASY) BLUE DOT BOOKS', 'FICTION (CHILDREN/EASY)');
+-- update m_gc.asset_copy_legacy set l_location = replace(l_location, 'FICTION (EASY) GREEN DOT BOOKS', 'FICTION (CHILDREN/EASY)');
+-- update m_gc.asset_copy_legacy set l_location = replace(l_location, 'BIOGRAPHY (YOUNG ADULTS)', 'BIOGRAPHY');
 
 -- Wherever the locations in the copy_legacy table match up with the map - set the shelf loc and circ mod to match as well
 UPDATE m_gc.asset_copy_legacy a 
@@ -79,26 +80,6 @@ UPDATE m_gc.asset_copy_legacy a
   FROM asset.copy_location b
   WHERE a.l_shelf = b.name
   and a.circ_lib = b.owning_lib;
-
-TRUNCATE m_gc.asset_call_number;
-
-INSERT INTO m_gc.asset_call_number ( 
-  label, record, owning_lib, creator, editor
-  ) SELECT DISTINCT
-    l_call_num,
-    egid,
-    circ_lib, -- GCJN
-    1,  -- Admin
-    1 -- Admin
-    FROM m_gc.asset_copy_legacy AS i WHERE egid <> -1 AND egid 
-      IN (SELECT id FROM biblio.record_entry) ORDER BY 1,2,3;
-
--- Why does the "as i" piece of this do?
-UPDATE m_gc.asset_copy_legacy as i SET call_number = COALESCE(
-  (SELECT c.id FROM m_gc.asset_call_number AS c WHERE label = l_call_num AND
-   record = egid AND owning_lib = circ_lib),
-   -1 -- Precat record
-   ); 
 
 -- Set age protection for records that aren't more than 6 months old
 UPDATE m_gc.asset_copy_legacy
@@ -140,24 +121,57 @@ SELECT barcode
   JOIN asset.copy USING (barcode)
   WHERE NOT copy.deleted;
 
--- account for bib merges
+-- account for bib merges -- MUST MUST MUST be done PRIOR to populate call numbers step
+\echo accounting for bib merging
 DROP TABLE IF EXISTS m_gc.merge;
 CREATE TABLE m_gc.merge (
-  lead BIGINT,
-  sub BIGINT
+lead BIGINT,
+sub BIGINT
 );
 \copy m_gc.merge FROM rpt/gc.merge
 
-UPDATE m_gc.asset_call_number a
-  SET record = b.lead
-  FROM m_gc.merge b
-  WHERE a.record = b.sub;
+UPDATE m_gc.asset_copy_legacy a
+SET egid = b.lead
+FROM m_gc.merge b
+WHERE a.egid = b.sub;
 
+TRUNCATE m_gc.asset_call_number;
+
+INSERT INTO m_gc.asset_call_number ( 
+  label, record, owning_lib, creator, editor
+  ) SELECT DISTINCT
+    l_call_num,
+    egid,
+    circ_lib, -- GCJN
+    1,  -- Admin
+    1 -- Admin
+    FROM m_gc.asset_copy_legacy AS i WHERE egid <> -1 AND egid 
+      IN (SELECT id FROM biblio.record_entry) ORDER BY 1,2,3;
+
+--link call number labels to asset.copy
+\echo linking call numbers to asset.copy
+UPDATE m_gc.asset_copy_legacy AS i SET call_number = COALESCE(
+ (SELECT c.id FROM m_gc.asset_call_number AS c WHERE label = l_call_num AND record = egid AND owning_lib = circ_lib),
+  -1
+);
+
+\echo about to start copying staging values into production tables
 BEGIN;
 
 -- asset.copy_locations have already been populated by Janine
+--\echo inserting copy locations
 -- INSERT INTO asset.copy_location SELECT * FROM m_gc.asset_copy_location;
+\echo inserting copies
 INSERT INTO asset.copy SELECT * FROM m_gc.asset_copy;
+\echo inserting call numbers
 INSERT INTO asset.call_number SELECT * FROM m_gc.asset_call_number;
 
 COMMIT;
+
+--Clean up bib records after merging has occurred
+\echo deleting (logically) merged bibs
+BEGIN;
+UPDATE biblio.record_entry SET deleted='t' WHERE id IN (SELECT sub FROM m_gc.merge);
+COMMIT;
+
+\echo DONE!
