@@ -3,7 +3,7 @@ DROP SCHEMA IF EXISTS m_gc CASCADE;
 
 -- Create the migration scheme and use the migration tools to build it up
 CREATE SCHEMA m_gc;
-\i ../migration-tools/sql/base/base.sql
+\i /mnt/evergreen/migration/migration-tools/sql/base/base.sql
 select migration_tools.init('m_gc');
 select migration_tools.build('m_gc');
 
@@ -20,7 +20,7 @@ l_create_date TEXT) inherits (m_gc.asset_copy);
 
 -- bring in the data from the output of extract_holdings script. Remember that the first three rows of this file
 -- need to be deleted
-\copy m_gc.asset_copy_legacy(egid, hseq, l_price, l_call_num, l_barcode, l_location, l_create_date) from gc-HOLDINGS.pg
+\copy m_gc.asset_copy_legacy(egid, hseq, l_price, l_call_num, l_barcode, l_location, l_create_date) from /mnt/evergreen/migration/GrundyFinal/gc-HOLDINGS.pg
 
 -- Get rid of any whitespace around the fields that may cause us problems later
 UPDATE m_gc.asset_copy_legacy SET l_barcode = BTRIM(l_barcode), l_call_num = BTRIM(l_call_num), l_price = BTRIM(l_price), l_location = BTRIM(l_location);
@@ -42,7 +42,7 @@ DROP TABLE if exists m_gc.loc_map;
 CREATE TABLE m_gc.loc_map ( l_location TEXT, l_circ_mod TEXT, l_shelf TEXT );
 
 -- Bring in the location map from the tab separated sheet (This was made from a worksheet)
-\copy m_gc.loc_map from location_map.txt
+\copy m_gc.loc_map from /mnt/evergreen/migration/GrundyFinal/location_map.txt
 
 -- Uppercase these locations as well
 update m_gc.loc_map set l_location = UPPER(l_location);
@@ -81,6 +81,9 @@ UPDATE m_gc.asset_copy_legacy a
   WHERE a.l_shelf = b.name
   and a.circ_lib = b.owning_lib;
 
+-- Move legacy create dates into staging create_date
+UPDATE m_gc.asset_copy_legacy SET create_date = l_create_date::date;
+
 -- Set age protection for records that aren't more than 6 months old
 UPDATE m_gc.asset_copy_legacy
   SET age_protect = 2
@@ -90,10 +93,10 @@ UPDATE m_gc.asset_copy_legacy
 DROP TABLE IF EXISTS m_gc.item_internal_dupes;
 
 -- check for internal barcode dupes and add a prefix
-SELECT barcode, count(*)
-FROM m_gc.asset_copy
-GROUP BY barcode
-HAVING COUNT(*) > 1;
+-- SELECT barcode, count(*)
+--FROM m_gc.asset_copy
+--GROUP BY barcode
+--HAVING COUNT(*) > 1;
 
 -- Look for items that have the same barcode so we can get rid of them
 CREATE TABLE m_gc.item_internal_dupes
@@ -116,10 +119,10 @@ DELETE FROM m_gc.asset_stat_cat_entry_copy_map
 WHERE owning_copy IN (SELECT id FROM m_gc.item_internal_dupes);
 
 -- dupes with incumbant items
-SELECT barcode
-  FROM m_gc.asset_copy
-  JOIN asset.copy USING (barcode)
-  WHERE NOT copy.deleted;
+-- SELECT barcode
+--   FROM m_gc.asset_copy
+--  JOIN asset.copy USING (barcode)
+--  WHERE NOT copy.deleted;
 
 -- account for bib merges -- MUST MUST MUST be done PRIOR to populate call numbers step
 \echo accounting for bib merging
@@ -128,7 +131,7 @@ CREATE TABLE m_gc.merge (
 lead BIGINT,
 sub BIGINT
 );
-\copy m_gc.merge FROM rpt/gc.merge
+\copy m_gc.merge FROM /mnt/evergreen/migration/GrundyFinal/rpt/gc.merge
 
 UPDATE m_gc.asset_copy_legacy a
 SET egid = b.lead
@@ -155,16 +158,31 @@ UPDATE m_gc.asset_copy_legacy AS i SET call_number = COALESCE(
   -1
 );
 
+update m_gc.asset_copy set circ_modifier = a.code
+from config.circ_modifier a
+where upper(m_gc.asset_copy.circ_modifier) = upper(a.code);
+
 \echo about to start copying staging values into production tables
 BEGIN;
-
+DELETE from action.circulation where target_copy in (select id from asset.copy where circ_lib = 105);
+DELETE from asset.copy where circ_lib = 105;
+DELETE from asset.copy_location where owning_lib = 105;
 \echo inserting copy locations
-INSERT INTO asset.copy_location SELECT * FROM m_gc.asset_copy_location;
+insert into asset.copy_location
+select m_gc.asset_copy_location.*
+from m_gc.asset_copy_location
+where name not in
+(select name
+from asset.copy_location
+where owning_lib = 105) and name is not null;
+-- and maybe 'name is not null'
+COMMIT;
+
+BEGIN;
 \echo inserting copies
 INSERT INTO asset.copy SELECT * FROM m_gc.asset_copy;
 \echo inserting call numbers
 INSERT INTO asset.call_number SELECT * FROM m_gc.asset_call_number;
-
 COMMIT;
 
 --Clean up bib records after merging has occurred

@@ -1,0 +1,8 @@
+Adult	City Resident
+Adult Out of County	Non-resident
+College Student	Student
+interlibrary loan	Inter-library
+Preschool	Student
+Kindergarten	Student
+Staff	Staff
+Student	Student

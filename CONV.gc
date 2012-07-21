@@ -14,19 +14,19 @@ function conv_bibs {
 	local startid=$2
 
 	# we know that the source character encoding is MARC-8
-	# echo '<?xml version="1.0" encoding="UTF-8" ?>'  > inter/$PREFIX.marc.xml
-	# yaz-marcdump -f MARC-8 -t UTF-8 -o marcxml $bibfile >> inter/$PREFIX.marc.xml
+	 echo '<?xml version="1.0" encoding="UTF-8" ?>'  > inter/$PREFIX.marc.xml
+	 yaz-marcdump -f MARC-8 -t UTF-8 -o marcxml $bibfile >> inter/$PREFIX.marc.xml
 
-	# echo "checking validity of MARC XML"
-	# echo "validity = well-formed XML + valid UTF-8"
-	# xmllint --noout inter/$PREFIX.marc.xml 2> log/$PREFIX.marc.xml.err
+	 echo "checking validity of MARC XML"
+	 echo "validity = well-formed XML + valid UTF-8"
+	 xmllint --noout inter/$PREFIX.marc.xml 2> log/$PREFIX.marc.xml.err
 
-	# marc_cleanup --prefix=$PREFIX --marcfile=inter/$PREFIX.marc.xml --fullauto --renumber-from $startid -ot 001
+	 marc_cleanup --prefix=$PREFIX --marcfile=inter/$PREFIX.marc.xml --fullauto --renumber-from $startid -ot 001
 
-	# mv $PREFIX.clean.marc.xml inter
-	# mv old2new.map rpt
+	 mv $PREFIX.clean.marc.xml inter
+	 mv old2new.map rpt
 
-	# fingerprinter -o rpt/$PREFIX.fp -x err/$PREFIX.fp.ex inter/$PREFIX.clean.marc.xml
+	 fingerprinter -o rpt/$PREFIX.fp -x err/$PREFIX.fp.ex inter/$PREFIX.clean.marc.xml
 
         #make sure -T switch for sort is used.  /tmp partition is NOT big enough to support the temporary output
  	cat rpt/incum.fp rpt/$PREFIX.fp | sort -T inter -r > rpt/dedupe.fp
@@ -50,8 +50,8 @@ function load_bibs {
 	echo "executing pg_loader-output.sql"
 	psql -U evergreen -h localhost -d evergreen < out/pg_loader-output.sql > log/load_pg_loader-output
 	
-	echo "executing quick_metarecord_map.sql "
-        psql -U evergreen < quick_metarecord_map.sql  > log/log.create_metabib
+	#echo "executing quick_metarecord_map.sql "
+        #psql -U evergreen -h localhost -d evergreen < quick_metarecord_map.sql  > log/log.create_metabib
 	
 }
 
@@ -60,11 +60,14 @@ function conv_items {
 	~/migration/migration-tools/barcode_transform inter/$PREFIX.clean.marc.xml 852 p 33577
 	extract_holdings --marcfile=inter/$PREFIX.clean.marc.xml.transformed --prefix=$PREFIX --holding 852 --copyid 852p \
 			 --map cfg/$PREFIX.holdings.map
+	mv $PREFIX-HOLDINGS.pg $PREFIX-HOLDINGS.tmp
+	cat $PREFIX-HOLDINGS.tmp | sed '1,3d' > $PREFIX-HOLDINGS.pg
+	rm $PREFIX-HOLDINGS.tmp
 }
 
 #dedupe #this step now run by CONV.dedupe in /var/evergreen/migration/dedupe
-conv_bibs $BIBFILE $STARTID
-pg_loader
-load_bibs
+#conv_bibs $BIBFILE $STARTID
+#pg_loader
+#load_bibs
 conv_items
 

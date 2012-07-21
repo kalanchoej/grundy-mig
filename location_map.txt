@@ -11,15 +11,18 @@
 Audio Books (CD)	AudioBooks	Audio Books (CD)
 Audio Movies	DVD	DVD
 Biography	Biography	Biography
-Biography (Young Adults)	Biography	Biography
+Biography (Young Adults)	Biography	Biography (Young Adults)
 Board Books	Books	Board books
 Book & CD	Books	Book & CD
 Downstairs parenting	Books	Downstairs Parenting
 Ellison Cutter	Equipment	Accucut
 Equipment	Equipment	Equipment
 Fiction (Adult)	Books	Fiction (Adult)
-Fiction (Easy)	Books	Fiction (Children/Easy)
-Fiction (Children/Easy)	Books	Fiction (Children/Easy)
+Fiction (Easy)	Books	Fiction (Easy)
+Fiction (Easy) Green Dot books	Books	Fiction (Easy) Green Dot books
+Fiction (Easy) Blue Dot books	Books	Fiction (Easy) Blue Dot books
+Fiction (Easy) Red Dot books	Books	Fiction (Easy) Red Dot books
+Fiction (Children/Easy)	Books	Fiction (Easy)
 Fiction (Juvenile)	Books	Fiction (Juvenile)
 Fiction (Young Adult)	Books	Fiction (Young Adult)
 Genealogy	Noncirculating	Genealogy
@@ -33,8 +36,11 @@ Missouri	Books	Missouri
 Missouri (Juvenile)	Books	Missouri (Juvenile)
 Music (CD)	CD	Music (CD)
 Music (Downstairs)	CD	Music (Downstairs)
-Non-Fiction (Easy)	Books	Non-Fiction (Children/Easy)
-Non-Fiction (Children/Easy)	Books	Non-Fiction (Children/Easy)
+Non-Fiction (Easy)	Books	Non-Fiction (Easy)
+Non-Fiction (Easy) Red Dot books	Books	Non-Fiction (Easy) Red Dot books
+Non-Fiction (Easy) Green Dot books	Books	Non-Fiction (Easy) Green Dot books
+Non-Fiction (Easy) Blue Dot books	Books	Non-Fiction (Easy) Blue Dot books
+Non-Fiction (Children/Easy)	Books	Non-Fiction (Easy)
 Non-Fiction (Juvenile)	Books	Non-Fiction (Juvenile)
 Non-Fiction (Young Adult)	Books	Non-Fiction (Young Adult)
 Oversize Books NF	Books	Oversize Books NF
@@ -44,3 +50,8 @@ Reference Young Adult Non-fiction	Books	Ref (Young Adult)
 Referenece Juvenile Non-fiction	Books	Ref (Juvenile)
 Video (DVD)	DVD	DVD
 Young Adult Audio (CD)	CD	Young Adult Audio (CD)
+Book & Cassette	Books	unused
+Large Print Books (Juvenile)	Books	unused
+Magazines (Juvenile)	Books	unused
+Magnifying glass	Books	unused
+Staff only	Books	unused
